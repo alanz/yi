@@ -26,7 +26,7 @@ where
 
 import Control.Applicative
 import Control.Monad
-import Control.Lens
+import Control.Lens hiding (transform)
 import Data.Algorithm.Diff
 import Data.Char (isSpace)
 import Data.List (sort)
@@ -75,17 +75,10 @@ replaceRegionClever region text' = savingExcursionB $ do
     text <- readRegionB region
     let diffs = getGroupedDiff text text'
     moveTo (regionStart region)
-#if MIN_VERSION_Diff(0,2,0)
     forM_ diffs $ \d -> case d of
             First str -> deleteN $ length str
             Both str _ -> rightN $ length str
             Second str -> insertN str
-#else
-    forM_ diffs $ \(d,str) -> case d of
-            F -> deleteN $ length str
-            B -> rightN $ length str
-            S -> insertN str
-#endif
 
 mapRegionB :: Region -> (Char -> Char) -> BufferM ()
 mapRegionB r f = do

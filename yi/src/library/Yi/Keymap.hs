@@ -12,9 +12,7 @@ module Yi.Keymap
     , KeymapProcess
     , KeymapSet(..)
     , topKeymapA
-    , startInsertKeymapA
     , insertKeymapA
-    , startTopKeymapA
     , extractTopKeymap
     , modelessKeymapSet
     , YiM(..)
@@ -63,8 +61,8 @@ data Action = forall a. Show a => YiA (YiM a)
 emptyAction :: Action
 emptyAction = BufferA (return ())
 
-instance I.PEq Action where
-    equiv _ _ = False
+instance Eq Action where
+    _ == _ = False
 
 instance Show Action where
     show (YiA _) = "@Y"
@@ -82,8 +80,8 @@ type KeymapEndo = Keymap -> Keymap
 type KeymapProcess = I.P Event Action
 
 data Yi = Yi {yiUi          :: UI,
-              input         :: Event -> IO (),      -- ^ input stream
-              output        :: [Action] -> IO (),   -- ^ output stream
+              yiInput       :: Event -> IO (),      -- ^ input stream
+              yiOutput      :: [Action] -> IO (),   -- ^ output stream
               yiConfig      :: Config,
               -- TODO: this leads to anti-patterns and seems like one itself
               -- too coarse for actual concurrency, otherwise pointless
@@ -188,21 +186,15 @@ instance YiAction (BufferM x) x where
 instance YiAction Action () where
     makeAction = id
 
-
-instance I.PEq Event where
-    equiv = (==)
-
 data KeymapSet = KeymapSet
     { topKeymap :: Keymap         -- ^ Content of the top-level loop.
-    , startInsertKeymap :: Keymap -- ^ Startup when entering insert mode
     , insertKeymap :: Keymap      -- ^ For insertion-only modes
-    , startTopKeymap :: Keymap    -- ^ Startup bit, to execute only once at the beginning.
     }
 
 makeLensesWithSuffix "A" ''KeymapSet
 
 extractTopKeymap :: KeymapSet -> Keymap
-extractTopKeymap kms = startTopKeymap kms >> forever (topKeymap kms)
+extractTopKeymap kms = forever (topKeymap kms)
     -- Note the use of "forever": this has quite subtle implications, as it means that
     -- failures in one iteration can yield to jump to the next iteration seamlessly.
     -- eg. in emacs keybinding, failures in incremental search, like <left>, will "exit"
@@ -211,9 +203,7 @@ extractTopKeymap kms = startTopKeymap kms >> forever (topKeymap kms)
 modelessKeymapSet :: Keymap -> KeymapSet
 modelessKeymapSet k = KeymapSet
  { insertKeymap = k
- , startInsertKeymap = return ()
  , topKeymap = k
- , startTopKeymap = return ()
  }
 
 -- | @withModeY f@ runs @f@ on the current buffer's mode. As this runs in

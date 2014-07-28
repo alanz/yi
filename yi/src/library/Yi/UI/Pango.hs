@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, ExistentialQuantification, TupleSections, NamedFieldPuns
-           , ViewPatterns, ScopedTypeVariables #-}
+           , ViewPatterns, ScopedTypeVariables, LambdaCase #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
 
 -- |
@@ -193,6 +193,12 @@ startNoMsg cfg ch outCh ed = do
   panedAdd2 paned (baseWidget tabs)
 
   status  <- statusbarNew
+
+  -- Allow multiple lines in statusbar, GitHub issue #478
+  statusbarGetMessageArea status >>= containerGetChildren >>= \case
+    [w] -> labelSetSingleLineMode (castToLabel w) False
+    _ -> return ()
+
   -- statusbarGetContextId status "global"
 
   set vb [ containerChild := paned
@@ -200,7 +206,7 @@ startNoMsg cfg ch outCh ed = do
          , boxChildPacking status := PackNatural
          ]
 
-  fontRef <- newIORef undefined
+  fontRef <- fontDescriptionNew >>= newIORef
 
   let actionCh = outCh . return
   tc <- newIORef =<< newCache ed actionCh
@@ -826,36 +832,3 @@ setSelectionClipboard ui _w cb = do
 
   unless (null txt) $ clipboardSetText cb txt
 
-
-
--- Some useful stuff from `startNoMsg`
---
--- Disable the left pane (file/module browser) until Shim/Scion discussion has
--- concluded. Shim causes crashes, but it's not worth fixing if we'll soon
--- replace it.
-
-{-
-tabs' <- notebookNew
-widgetSetSizeRequest tabs' 200 (-1)
-notebookSetTabPos tabs' PosBottom
-panedAdd1 paned tabs'
-
--- Create the tree views for files and modules
-(filesProject, modulesProject) <- loadProject =<< getCurrentDirectory
-
-filesStore   <- treeStoreNew [filesProject]
-modulesStore <- treeStoreNew [modulesProject]
-
-filesTree   <- projectTreeNew (outCh . singleton) filesStore
-modulesTree <- projectTreeNew (outCh . singleton) modulesStore
-
-scrlProject <- scrolledWindowNew Nothing Nothing
-scrolledWindowAddWithViewport scrlProject filesTree
-scrolledWindowSetPolicy scrlProject PolicyAutomatic PolicyAutomatic
-notebookAppendPage tabs scrlProject "Project"
-
-scrlModules <- scrolledWindowNew Nothing Nothing
-scrolledWindowAddWithViewport scrlModules modulesTree
-scrolledWindowSetPolicy scrlModules PolicyAutomatic PolicyAutomatic
-notebookAppendPage tabs scrlModules "Modules"
--}

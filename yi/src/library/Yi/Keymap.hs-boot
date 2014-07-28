@@ -3,7 +3,6 @@
 module Yi.Keymap where
 
 import Control.Monad.Reader hiding (mapM_)
-import Control.Monad.State hiding (mapM_)
 
 import qualified Yi.Interact as I
 import Yi.Event
@@ -12,7 +11,7 @@ import {-# SOURCE #-} Yi.Buffer.Misc (BufferM)
 
 data Action
 
-instance I.PEq Action
+instance Eq Action
 
 emptyAction :: Action
 

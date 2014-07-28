@@ -71,9 +71,6 @@ module Yi.Config.Simple (
   module Yi.Style.Library,
   module Yi.Misc,
   module Yi.Mode.Haskell,
-#ifdef SCION
-  module Yi.Scion,
-#endif
  ) where
 
 import Yi.Boot
@@ -90,9 +87,6 @@ import Yi.Style
 import Yi.Style.Library
 import Yi.Misc
 import Yi.Mode.Haskell
-#ifdef SCION
-import Yi.Scion
-#endif
 import Yi.Utils
 
 import Text.Printf(printf)
@@ -106,10 +100,13 @@ import Yi.Config(Config, UIConfig,
                  startFrontEndA, configUIA, startActionsA, initialActionsA, defaultKmA,
                  configInputPreprocessA, modeTableA, debugModeA,
                  configRegionStyleA, configKillringAccumulateA, bufferUpdateHandlerA,
-                 configVtyEscDelayA, configFontNameA, configFontSizeA, configScrollWheelAmountA,
+                 configFontNameA, configFontSizeA, configScrollWheelAmountA,
                  configScrollStyleA, configCursorStyleA, CursorStyle(..),
                  configLeftSideScrollBarA, configAutoHideScrollBarA, configAutoHideTabBarA,
                  configLineWrapA, configWindowFillA, configThemeA, layoutManagersA, configVarsA,
+#ifdef FRONTEND_VTY
+                 configVtyA
+#endif
                 )
 import Data.Maybe(mapMaybe)
 
