@@ -36,6 +36,7 @@ before_install:
 
 install:
  - cabal-1.20 update
+ - travis_retry cabal-1.20 install Cabal
  - travis_retry cabal-1.20 install -j2 alex happy
  - travis_retry cabal-1.20 install -j2 gtk2hs-buildtools
 
@@ -51,3 +52,6 @@ script:
 
  - cd ../../yi-contrib
  - cabal-1.20 install
+
+notifications:
+  irc: "chat.freenode.net#yi"

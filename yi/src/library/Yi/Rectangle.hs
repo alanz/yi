@@ -84,4 +84,3 @@ yankRectangle = do
     withBuffer0 $ forM_ text $ \t -> do
         savingPointB $ insertN t
         lineDown
-

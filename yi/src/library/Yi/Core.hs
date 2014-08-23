@@ -1,6 +1,8 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE
+  ScopedTypeVariables,
+  RecursiveDo,
+  Rank2Types,
+  OverloadedStrings #-}
 
 -- Copyright (c) Tuomo Valkonen 2004.
 -- Copyright (c) Don Stewart 2004-5. http://www.cse.unsw.edu.au/~dons
@@ -261,9 +263,6 @@ focusAllSyntax e6 = buffersA %~ fmap (\b -> focusSyntax (regions b) b) $ e6
           -- Answer: focusing is an incremental algorithm. Each "focused" path depends on the previous one.
           -- If we left unforced focused paths, we'd create a long list of thunks: a memory leak.
 
-pureM :: Monad m => (a -> b) -> a -> m b
-pureM f = return . f
-
 -- | Redraw
 refreshEditor :: YiM ()
 refreshEditor = onYiVar $ \yi var -> do
@@ -278,15 +277,15 @@ refreshEditor = onYiVar $ \yi var -> do
                 (if or relayout then UI.layout (yiUi yi) else return) e4
 
         e7 <- (if configCheckExternalChangesObsessively cfg then checkFileChanges else return) (yiEditor var) >>=
-             pureM clearAllSyntaxAndHideSelection >>=
+             return . clearAllSyntaxAndHideSelection >>=
              -- Adjust window sizes according to UI info
              UI.layout (yiUi yi) >>=
              scroll >>=
              -- Adjust point according to the current layout;
-             pureM (fst . runOnWins snapInsB) >>=
-             pureM focusAllSyntax >>=
+             return . (fst . runOnWins snapInsB) >>=
+             return . focusAllSyntax >>=
              -- Clear "pending updates" and "followUp" from buffers.
-             pureM (buffersA %~ fmap (clearUpdates . clearFollow))
+             return . (buffersA %~ fmap (clearUpdates . clearFollow))
         -- Display the new state of the editor
         UI.refresh (yiUi yi) e7
         -- Terminate stale processes.
@@ -372,7 +371,7 @@ startSubprocess :: FilePath -> [String] -> (Either SomeException ExitCode -> YiM
 startSubprocess cmd args onExit = onYiVar $ \yi var -> do
         let (e', bufref) = runEditor
                               (yiConfig yi)
-                              (printMsg ("Launched process: " ++ cmd) >> newBufferE (Left bufferName) (R.fromString ""))
+                              (printMsg ("Launched process: " ++ cmd) >> newBufferE (Left bufferName) "")
                               (yiEditor var)
             procid = yiSubprocessIdSupply var + 1
         procinfo <- createSubprocess cmd args bufref

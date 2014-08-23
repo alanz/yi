@@ -1,5 +1,5 @@
 name:           yi
-version:        0.9.0
+version:        0.9.1
 category:       Development, Editor
 synopsis:       The Haskell-Scriptable Editor
 description:
@@ -205,7 +205,9 @@ library
     Yi.Char.Unicode
 
   if impl(ghc < 7.8)
-    build-depends: derive >=2.4 && <2.7
+    build-depends: derive >=2.4 && <2.7, binary >= 0.5, tagged
+  else
+    build-depends: binary >= 0.7
   build-depends:
     Cabal >= 1.10,
     Diff >=0.2,
@@ -215,12 +217,11 @@ library
     process >= 1.0.1.1,
     old-locale,
     base >= 4 && < 5,
-    binary >= 0.5,
     bytestring >= 0.9.1 && < 0.11,
     cautious-file >= 1.0.1,
     concrete-typerep >= 0.1.0.2 && < 0.1.1,
     data-default,
-    lens >= 4.0,
+    lens >= 4.4.0.1,
     dlist >=0.4.1,
     dyre >=0.8.11,
     filepath>=1.1 && <1.4,
@@ -235,12 +236,14 @@ library
     safe >= 0.3.4 && < 0.4,
     split >= 0.1 && < 0.3,
     template-haskell >= 2.4,
+    text,
     time >= 1.1 && < 1.5,
     utf8-string >= 0.3.1,
     unix-compat >=0.1 && <0.5,
     unordered-containers >= 0.1.3 && < 0.3,
     xdg-basedir >= 0.2.1 && < 0.3,
-    transformers-base
+    transformers-base,
+    semigroups
 
   build-tools: alex >= 3.0.3
   ghc-options: -Wall -fno-warn-orphans
@@ -275,9 +278,9 @@ library
       Yi.UI.Pango.Layouts
       Yi.UI.Pango.Utils
     build-depends:
-      gtk ==0.12.*,
-      glib ==0.12.*,
-      pango ==0.12.*
+      gtk ==0.13.*,
+      glib ==0.13.*,
+      pango ==0.13.*
     cpp-options: -DFRONTEND_PANGO
 
   if flag(vty)

@@ -1,5 +1,14 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleInstances, MultiParamTypeClasses, UndecidableInstances, TypeSynonymInstances,
-  TypeOperators, EmptyDataDecls, DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE
+  ScopedTypeVariables,
+  FlexibleInstances,
+  MultiParamTypeClasses,
+  UndecidableInstances,
+  TypeSynonymInstances,
+  TypeOperators,
+  EmptyDataDecls,
+  DeriveDataTypeable,
+  GeneralizedNewtypeDeriving,
+  OverloadedStrings #-}
 
 module Yi.MiniBuffer
  (
@@ -17,6 +26,7 @@ import Control.Applicative
 import Control.Monad
 import Control.Lens hiding (act)
 import Data.List (isInfixOf)
+import Data.Proxy
 import qualified Data.List.PointedList.Circular as PL
 import Data.Maybe
 import Data.String (IsString)
@@ -29,7 +39,6 @@ import Yi.Completion (infixMatch, prefixMatch, containsMatch', completeInList, c
 import Yi.Style (defaultStyle)
 import Yi.Utils
 import Yi.Monad
-import qualified Data.Rope as R
 import System.CanonicalizePath (replaceShorthands)
 
 -- | Open a minibuffer window with the given prompt and keymap
@@ -38,7 +47,7 @@ import System.CanonicalizePath (replaceShorthands)
 -- string. If you don't need this just supply @return ()@
 spawnMinibufferE :: String -> KeymapEndo -> EditorM BufferRef
 spawnMinibufferE prompt kmMod =
-    do b <- stringToNewBuffer (Left prompt) (R.fromString "")
+    do b <- stringToNewBuffer (Left prompt) ""
        -- Now create the minibuffer keymap and switch to the minibuffer window
        withGivenBuffer0 b $
          modifyMode $ \m -> m { modeKeymap = \kms -> kms { topKeymap = kmMod (insertKeymap kms)
@@ -62,13 +71,12 @@ spawnMinibufferE prompt kmMod =
        (%=) windowsA (PL.insertRight w)
        return b
 
-{-# ANN withMinibuffer "HLint: ignore Eta reduce" #-}
 -- | @withMinibuffer prompt completer act@: open a minibuffer with @prompt@. Once
 -- a string @s@ is obtained, run @act s@. @completer@ can be used to complete
 -- functions: it returns a list of possible matches.
 withMinibuffer :: String -> (String -> YiM [String]) -> (String -> YiM ()) -> YiM ()
-withMinibuffer prompt getPossibilities act =
-  withMinibufferGen "" giveHint prompt completer (const $ return ()) act
+withMinibuffer prompt getPossibilities =
+  withMinibufferGen "" giveHint prompt completer (const $ return ())
     where giveHint s = catMaybes . fmap (prefixMatch s) <$> getPossibilities s
           completer = simpleComplete getPossibilities
 
@@ -87,12 +95,15 @@ infixComplete' caseSensitive = mkCompleteFn completeInList' $ containsMatch' cas
 infixComplete :: (String -> YiM [String]) -> String -> YiM String
 infixComplete = infixComplete' True
 
+-- | Hint function that does nothing, for use with @'withMinibufferGen'@
 noHint :: String -> YiM [String]
 noHint = const $ return []
 
 noPossibilities :: String -> YiM [ String ]
 noPossibilities _s = return []
 
+-- | @withMinibufferFree prompt act@:
+-- Simple version of @'withMinibufferGen'@
 withMinibufferFree :: String -> (String -> YiM ()) -> YiM ()
 withMinibufferFree prompt = withMinibufferGen "" noHint prompt
                             return (const $ return ())
@@ -195,14 +206,14 @@ completionFunction f = do
 
 class Promptable a where
     getPromptedValue :: String -> YiM a
-    getPrompt :: a -> String           -- Parameter can be "undefined/bottom"
-    getMinibuffer :: a -> String -> (String -> YiM ()) -> YiM ()
+    getPrompt :: Proxy a -> String
+    getMinibuffer :: Proxy a -> String -> (String -> YiM ()) -> YiM ()
     getMinibuffer _ = withMinibufferFree
 
 doPrompt :: forall a. Promptable a => (a -> YiM ()) -> YiM ()
 doPrompt act = getMinibuffer witness (getPrompt witness ++ ":") (act <=< getPromptedValue)
-    where witness = error "Promptable argument should not be accessed"
-          witness :: a
+    where witness = undefined
+          witness :: Proxy a
 
 instance Promptable String where
     getPromptedValue = return
@@ -221,7 +232,7 @@ instance Promptable Int where
 getPromptedValueList :: [(String,a)] -> String -> YiM a
 getPromptedValueList vs s = maybe (error "Invalid choice") return (lookup s vs)
 
-getMinibufferList :: [(String,a)] -> a -> String -> (String -> YiM ()) -> YiM ()
+getMinibufferList :: [(String,a)] -> Proxy a -> String -> (String -> YiM ()) -> YiM ()
 getMinibufferList vs _ prompt = withMinibufferFin prompt (fmap fst vs)
 
 enumAll :: (Enum a, Bounded a, Show a) => [(String, a)]
